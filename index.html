@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>E-commerce Padrão</title>
+  <style>
+    :root{--primary:#0d6efd;--muted:#6c757d;--bg:#f8f9fa;--card:#ffffff}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial; margin:0;background:var(--bg);color:#222}
+    header{background:#fff;border-bottom:1px solid #e9ecef;position:sticky;top:0;z-index:20}
+    .container{max-width:1100px;margin:0 auto;padding:18px}
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-weight:700;font-size:18px;color:var(--primary)}
+    .search{flex:1;margin:0 16px}
+    .search input{width:100%;padding:10px 12px;border:1px solid #e9ecef;border-radius:8px}
+    .cart-btn{background:var(--primary);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+
+    .hero{background:linear-gradient(90deg, rgba(13,110,253,0.06), rgba(13,110,253,0.02));padding:28px 0;margin-bottom:18px}
+    .hero-inner{display:flex;align-items:center;gap:20px}
+    .hero h1{margin:0;font-size:26px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+    .card{background:var(--card);padding:12px;border-radius:10px;border:1px solid #e9ecef;display:flex;flex-direction:column}
+    .card img{width:100%;height:160px;object-fit:cover;border-radius:6px}
+    .card .title{font-weight:600;margin-top:10px}
+    .card .price{margin-top:6px;color:var(--primary);font-weight:700}
+    .card .meta{font-size:13px;color:var(--muted)}
+    .card .actions{margin-top:auto;display:flex;gap:8px}
+    .btn{padding:8px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+    .btn-outline{background:#fff;border-color:#ced4da}
+
+    .cart-panel{position:fixed;right:18px;top:80px;width:320px;max-height:70vh;background:#fff;border:1px solid #e9ecef;border-radius:10px;padding:12px;box-shadow:0 6px 30px rgba(17,24,39,0.06);overflow:auto}
+    .cart-item{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed #f1f3f5}
+    .cart-item img{width:56px;height:56px;object-fit:cover;border-radius:6px}
+    .cart-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+
+    footer{padding:28px 0;margin-top:28px;background:transparent}
+
+    /* Responsividade */
+    @media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.container{padding:14px}}
+    @media (max-width:600px){.grid{grid-template-columns:1fr}.hero-inner{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="brand">Loja Padrão</div>
+        <div style="font-size:13px;color:var(--muted)">Frete grátis acima de R$199</div>
+      </div>
+      <div class="search"><input id="search" placeholder="Buscar produtos..." /></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="cart-btn" id="open-cart">Carrinho (<span id="cart-count">0</span>)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <h1>Bem-vindo à Loja Padrão</h1>
+          <p style="margin:6px 0;color:var(--muted)">Produtos selecionados com as melhores ofertas.</p>
+        </div>
+        <div style="margin-left:auto">
+          <button class="btn btn-outline" id="view-orders">Meus pedidos</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Produtos</h2>
+        <select id="sort">
+          <option value="default">Ordenar</option>
+          <option value="price-asc">Preço: menor</option>
+          <option value="price-desc">Preço: maior</option>
+        </select>
+      </div>
+
+      <div class="grid" id="products"></div>
+    </section>
+
+    <footer>
+      <div style="text-align:center;color:var(--muted)">© Loja Padrão — Feito com carinho</div>
+    </footer>
+  </main>
+
+  <!-- Painel do carrinho (inicialmente escondido) -->
+  <aside class="cart-panel" id="cart" style="display:none">
+    <h3>Carrinho</h3>
+    <div id="cart-items"></div>
+    <div class="cart-footer">
+      <strong>Total: R$ <span id="cart-total">0.00</span></strong>
+      <button class="cart-btn" id="checkout">Finalizar</button>
+    </div>
+  </aside>
+
+  <script>
+    // Dados de exemplo — substitua por uma chamada API real quando quiser
+    const productsData = [
+      {id:1,title:'Camiseta Básica',price:49.9,meta:'Algodão — Várias cores',img:'https://picsum.photos/seed/p1/600/400'},
+      {id:2,title:'Tênis Esportivo',price:249.9,meta:'Amortecimento leve',img:'https://picsum.photos/seed/p2/600/400'},
+      {id:3,title:'Fone Bluetooth',price:129.9,meta:'Até 20h de bateria',img:'https://picsum.photos/seed/p3/600/400'},
+      {id:4,title:'Mochila Urban',price:179.9,meta:'Compartimento laptop',img:'https://picsum.photos/seed/p4/600/400'},
+      {id:5,title:'Relógio Smart',price:399.9,meta:'Monitor cardíaco',img:'https://picsum.photos/seed/p5/600/400'},
+      {id:6,title:'Caneca Cerâmica',price:29.9,meta:'350ml — Forno seguro',img:'https://picsum.photos/seed/p6/600/400'}
+    ];
+
+    // Estado do carrinho
+    let cart = JSON.parse(localStorage.getItem('loja_cart')||'[]');
+
+    const productsEl = document.getElementById('products');
+    const cartEl = document.getElementById('cart');
+    const cartItemsEl = document.getElementById('cart-items');
+    const cartCountEl = document.getElementById('cart-count');
+    const cartTotalEl = document.getElementById('cart-total');
+
+    function formatPrice(v){return v.toFixed(2).replace('.',',')}
+
+    function renderProducts(list){
+      productsEl.innerHTML='';
+      list.forEach(p=>{
+        const card = document.createElement('div');card.className='card';
+        card.innerHTML = `
+          <img src="${p.img}" alt="${p.title}">
+          <div class="title">${p.title}</div>
+          <div class="meta">${p.meta}</div>
+          <div class="price">R$ ${formatPrice(p.price)}</div>
+          <div class="actions">
+            <button class="btn btn-outline" data-id="${p.id}" onclick="addToCart(${p.id})">Adicionar</button>
+            <button class="btn" onclick="showQuickView(${p.id})">Ver</button>
+          </div>
+        `;
+        productsEl.appendChild(card);
+      })
+    }
+
+    function saveCart(){localStorage.setItem('loja_cart',JSON.stringify(cart));}
+
+    function updateCartUI(){
+      cartItemsEl.innerHTML='';
+      let total=0;
+      cart.forEach(item=>{
+        const p = productsData.find(x=>x.id===item.id);
+        total += p.price * item.q;
+        const row = document.createElement('div');row.className='cart-item';
+        row.innerHTML = `
+          <img src="${p.img}"/>
+          <div style="flex:1">
+            <div style="font-weight:600">${p.title}</div>
+            <div style="font-size:13px;color:${getComputedStyle(document.documentElement).getPropertyValue('--muted')}">R$ ${formatPrice(p.price)} x ${item.q}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button onclick="changeQty(${item.id},1)" class="btn">+</button>
+            <button onclick="changeQty(${item.id},-1)" class="btn btn-outline">-</button>
+          </div>
+        `;
+        cartItemsEl.appendChild(row);
+      });
+      cartCountEl.textContent = cart.reduce((s,i)=>s+i.q,0);
+      cartTotalEl.textContent = formatPrice(total);
+      saveCart();
+    }
+
+    function addToCart(id){
+      const found = cart.find(i=>i.id===id);
+      if(found) found.q += 1; else cart.push({id:id,q:1});
+      updateCartUI();
+      alert('Adicionado ao carrinho');
+    }
+
+    function changeQty(id,delta){
+      const idx = cart.findIndex(i=>i.id===id);
+      if(idx===-1) return;
+      cart[idx].q += delta;
+      if(cart[idx].q<=0) cart.splice(idx,1);
+      updateCartUI();
+    }
+
+    function showQuickView(id){
+      const p = productsData.find(x=>x.id===id);
+      alert(p.title + '\n\n' + p.meta + '\nPreço: R$ ' + formatPrice(p.price));
+    }
+
+    document.getElementById('open-cart').addEventListener('click',()=>{
+      cartEl.style.display = cartEl.style.display==='none' ? 'block' : 'none';
+    });
+
+    document.getElementById('checkout').addEventListener('click',()=>{
+      if(cart.length===0){alert('Carrinho vazio');return}
+      // Simulação de checkout
+      alert('Checkout simulado. Total: R$ ' + cartTotalEl.textContent);
+      cart = []; updateCartUI(); cartEl.style.display='none';
+    });
+
+    document.getElementById('search').addEventListener('input',e=>{
+      const q = e.target.value.toLowerCase();
+      renderProducts(productsData.filter(p=>p.title.toLowerCase().includes(q) || p.meta.toLowerCase().includes(q)));
+    });
+
+    document.getElementById('sort').addEventListener('change',e=>{
+      const v=e.target.value; let list = [...productsData];
+      if(v==='price-asc') list.sort((a,b)=>a.price-b.price);
+      if(v==='price-desc') list.sort((a,b)=>b.price-a.price);
+      renderProducts(list);
+    });
+
+    // Inicialização
+    renderProducts(productsData);
+    updateCartUI();
+  </script>
+</body>
+</html>
